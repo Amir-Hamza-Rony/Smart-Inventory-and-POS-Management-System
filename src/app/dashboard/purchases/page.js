@@ -165,7 +165,6 @@ export default function PurchasesPage() {
         body: JSON.stringify({
           ...formData,
           items: validItems,
-          userId: 'current-user-id', // TODO: Get from auth
         }),
       });
 
@@ -189,7 +188,7 @@ export default function PurchasesPage() {
       const response = await fetch(`/api/purchases/${purchaseId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'receive', userId: 'current-user-id' }),
+        body: JSON.stringify({ action: 'receive' }),
       });
 
       if (response.ok) {
@@ -211,7 +210,7 @@ export default function PurchasesPage() {
       const response = await fetch(`/api/purchases/${purchaseId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'cancel', userId: 'current-user-id' }),
+        body: JSON.stringify({ action: 'cancel' }),
       });
 
       if (response.ok) {

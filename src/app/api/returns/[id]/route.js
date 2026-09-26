@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import { Return, Product, ActivityLog, User } from '@/models';
+import { getUserFromRequest } from '@/lib/auth';
+import { createActivityLog } from '@/lib/notifications';
 
 export async function GET(request, { params }) {
   try {
@@ -29,7 +31,13 @@ export async function PATCH(request, { params }) {
     await connectDB();
     const { id } = params;
     const body = await request.json();
-    const { action, userId } = body;
+    const { action } = body;
+
+    const authUser = await getUserFromRequest(request);
+    if (!authUser) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    const userId = authUser.userId;
 
     const returnDoc = await Return.findById(id);
     if (!returnDoc) {
@@ -53,13 +61,11 @@ export async function PATCH(request, { params }) {
         .lean();
 
       // Log activity
-      await ActivityLog.create({
+      await createActivityLog({
         userId,
-        userName: (await User.findById(userId).lean()).name || 'Unknown',
-        userEmail: (await User.findById(userId).lean()).email || 'unknown@email.com',
         action: 'COMPLETE_RETURN',
         entity: 'RETURN',
-        entityId: returnDoc._id,
+        entityId: returnDoc._id.toString(),
         entityName: returnDoc.returnNumber,
         details: `Completed return ${returnDoc.returnNumber}`,
       });
@@ -87,13 +93,11 @@ export async function PATCH(request, { params }) {
         .lean();
 
       // Log activity
-      await ActivityLog.create({
+      await createActivityLog({
         userId,
-        userName: (await User.findById(userId).lean()).name || 'Unknown',
-        userEmail: (await User.findById(userId).lean()).email || 'unknown@email.com',
         action: 'REJECT_RETURN',
         entity: 'RETURN',
-        entityId: returnDoc._id,
+        entityId: returnDoc._id.toString(),
         entityName: returnDoc.returnNumber,
         details: `Rejected return ${returnDoc.returnNumber}`,
       });
@@ -102,6 +106,6 @@ export async function PATCH(request, { params }) {
     return NextResponse.json(updatedReturn);
   } catch (error) {
     console.error('Error updating return status:', error);
-    return NextResponse.json({ error: 'Failed to update return status' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to update return status', details: error.message }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import { Purchase, Product, Supplier, ActivityLog, User } from '@/models';
+import { getUserFromRequest } from '@/lib/auth';
 import { createActivityLog, notifyPurchaseReceived } from '@/lib/notifications';
 
 export async function GET(request, { params }) {
@@ -84,7 +85,13 @@ export async function PATCH(request, { params }) {
     await connectDB();
     const { id } = params;
     const body = await request.json();
-    const { action, userId } = body;
+    const { action } = body;
+
+    const authUser = await getUserFromRequest(request);
+    if (!authUser) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    const userId = authUser.userId;
 
     const purchase = await Purchase.findById(id);
     if (!purchase) {
@@ -107,6 +114,19 @@ export async function PATCH(request, { params }) {
         },
       }));
       await Product.bulkWrite(bulkOps);
+
+      // Log stock movements for each product (STOCK_IN with entity: PRODUCT)
+      for (const item of purchase.items) {
+        await createActivityLog({
+          userId,
+          action: 'STOCK_IN',
+          entity: 'PRODUCT',
+          entityId: item.productId.toString(),
+          entityName: item.productName,
+          details: `Stock increased by ${item.quantity} via purchase receipt ${purchase.purchaseNumber}`,
+          metadata: { quantity: item.quantity, referenceId: purchase._id.toString(), referenceType: 'PURCHASE' },
+        });
+      }
 
       updatedPurchase = await Purchase.findByIdAndUpdate(
         id,
@@ -163,6 +183,6 @@ export async function PATCH(request, { params }) {
     return NextResponse.json(updatedPurchase);
   } catch (error) {
     console.error('Error updating purchase status:', error);
-    return NextResponse.json({ error: 'Failed to update purchase status' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to update purchase status', details: error.message }, { status: 500 });
   }
 }

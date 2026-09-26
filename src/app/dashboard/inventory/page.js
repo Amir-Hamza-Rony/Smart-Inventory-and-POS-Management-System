@@ -139,7 +139,6 @@ export default function InventoryPage() {
           type,
           quantity: qty,
           reason,
-          userId: user?.id || 'current-user-id',
         }),
       });
 

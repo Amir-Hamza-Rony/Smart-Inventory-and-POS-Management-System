@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import { Product } from '@/models';
 import { createActivityLog, checkAndNotifyLowStock } from '@/lib/notifications';
+import { getUserFromRequest } from '@/lib/auth';
 
 export async function GET(request) {
   try {
@@ -60,11 +61,17 @@ export async function POST(request) {
     await connectDB();
 
     const body = await request.json();
-    const { productId, type, quantity, reason, userId, referenceId, referenceType } = body;
+    const { productId, type, quantity, reason, referenceId, referenceType } = body;
 
-    if (!productId || !type || !quantity || !userId) {
+    if (!productId || !type || !quantity) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+
+    const authUser = await getUserFromRequest(request);
+    if (!authUser) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    const userId = authUser.userId;
 
     if (!['IN', 'OUT', 'ADJUSTMENT'].includes(type)) {
       return NextResponse.json({ error: 'Invalid movement type' }, { status: 400 });

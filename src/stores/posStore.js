@@ -17,7 +17,7 @@ export const usePosStore = create(
 
       addItem: (product, quantity = 1) => {
         const { items } = get();
-        const existingIndex = items.findIndex(item => item.productId === product.id);
+        const existingIndex = items.findIndex(item => item.productId === product._id);
 
         if (existingIndex >= 0) {
           const newItems = [...items];
@@ -27,7 +27,7 @@ export const usePosStore = create(
         } else {
           const newItem = {
             id: crypto.randomUUID(),
-            productId: product.id,
+            productId: product._id,
             productName: product.name,
             sku: product.sku,
             barcode: product.barcode,

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import { Sale, Product, Settings, User, ActivityLog } from '@/models';
-import { generateSaleNumber } from '@/lib/utils';
+import { generateSaleNumber, formatCurrency } from '@/lib/utils';
+import { getUserFromRequest } from '@/lib/auth';
 import { createActivityLog, notifySaleCompleted, checkAndNotifyLowStock } from '@/lib/notifications';
 
 export async function GET(request) {
@@ -50,13 +51,19 @@ export async function POST(request) {
     await connectDB();
 
     const body = await request.json();
-    const { items, userId, paymentMethod, taxRate, discount, discountType, customerId, notes } = body;
+    const { items, paymentMethod, taxRate, discount, discountType, customerId, notes } = body;
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: 'No items in sale' }, { status: 400 });
     }
 
-    if (!userId || !paymentMethod) {
+    const authUser = await getUserFromRequest(request);
+    if (!authUser) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    const userId = authUser.userId;
+
+    if (!paymentMethod) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -165,6 +172,6 @@ export async function POST(request) {
     return NextResponse.json(sale, { status: 201 });
   } catch (error) {
     console.error('Error creating sale:', error);
-    return NextResponse.json({ error: 'Failed to create sale' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to create sale', details: error.message }, { status: 500 });
   }
 }

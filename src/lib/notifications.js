@@ -84,16 +84,27 @@ export async function createActivityLog({
   userAgent,
 }) {
   try {
-    const user = await User.findById(userId).lean();
-    if (!user) {
-      console.warn('User not found for activity log:', userId);
-      return null;
+    let userName = 'Unknown';
+    let userEmail = 'unknown@email.com';
+
+    if (userId) {
+      try {
+        const user = await User.findById(userId).lean();
+        if (user) {
+          userName = user.name || 'Unknown';
+          userEmail = user.email || 'unknown@email.com';
+        } else {
+          console.warn('User not found for activity log:', userId);
+        }
+      } catch (userLookupError) {
+        console.warn('ActivityLog: User lookup failed for userId:', userId, userLookupError.message);
+      }
     }
 
     const log = await ActivityLog.create({
       userId,
-      userName: user.name || 'Unknown',
-      userEmail: user.email || 'unknown@email.com',
+      userName,
+      userEmail,
       action,
       entity,
       entityId,

@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
+import mongoose from 'mongoose';
 import { Purchase, Supplier, Product, ActivityLog, User } from '@/models';
 import { generatePurchaseNumber } from '@/lib/utils';
+import { getUserFromRequest } from '@/lib/auth';
 
 export async function GET(request) {
   try {
@@ -54,14 +56,21 @@ export async function POST(request) {
     await connectDB();
 
     const body = await request.json();
-    const { supplierId, items, taxRate, discount, discountType, userId, expectedDate, notes } = body;
+    const { supplierId, items, taxRate, discount, discountType, expectedDate, notes } = body;
 
     if (!supplierId || !items || items.length === 0) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    const authUser = await getUserFromRequest(request);
+    if (!authUser) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    const userId = authUser.userId;
+
+    // Validate supplier ID is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(supplierId)) {
+      return NextResponse.json({ error: 'Invalid supplier ID' }, { status: 400 });
     }
 
     // Verify supplier exists
@@ -148,6 +157,6 @@ export async function POST(request) {
     return NextResponse.json(purchase, { status: 201 });
   } catch (error) {
     console.error('Error creating purchase:', error);
-    return NextResponse.json({ error: 'Failed to create purchase' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to create purchase', details: error.message }, { status: 500 });
   }
 }

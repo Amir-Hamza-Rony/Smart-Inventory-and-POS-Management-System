@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import { Return, Sale, Product, ActivityLog, User } from '@/models';
+import { Return, Sale, Product, ActivityLog, User, Customer } from '@/models';
 import { generateReturnNumber } from '@/lib/utils';
+import { getUserFromRequest } from '@/lib/auth';
 import { createActivityLog, notifyReturnRequest, checkAndNotifyLowStock } from '@/lib/notifications';
 
 export async function GET(request) {
@@ -51,15 +52,17 @@ export async function POST(request) {
     await connectDB();
 
     const body = await request.json();
-    const { saleId, items, refundMethod, userId, notes } = body;
+    const { saleId, items, refundMethod, notes } = body;
 
     if (!saleId || !items || items.length === 0) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    const authUser = await getUserFromRequest(request);
+    if (!authUser) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
+    const userId = authUser.userId;
 
     // Verify sale exists and is completed
     const sale = await Sale.findById(saleId).lean();
@@ -113,7 +116,7 @@ export async function POST(request) {
       saleId: sale._id,
       saleNumber: sale.saleNumber,
       customerId: sale.customerId,
-      customerName: sale.customerId ? (await Sale.populate(sale, { path: 'customerId', select: 'name' })).customerId?.name : undefined,
+      customerName: sale.customerId ? (await Customer.findById(sale.customerId).select('name').lean())?.name : undefined,
       items: returnItems,
       subtotal,
       tax,
@@ -182,6 +185,6 @@ export async function POST(request) {
     return NextResponse.json(returnDoc, { status: 201 });
   } catch (error) {
     console.error('Error creating return:', error);
-    return NextResponse.json({ error: 'Failed to create return' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to create return', details: error.message }, { status: 500 });
   }
 }

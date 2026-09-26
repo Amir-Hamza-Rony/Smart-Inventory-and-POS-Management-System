@@ -300,12 +300,16 @@ export default function SignupPage() {
             { icon: CheckCircle, label: 'No credit card', color: 'text-green-600' },
             { icon: CheckCircle, label: '14-day trial', color: 'text-blue-600' },
             { icon: CheckCircle, label: 'Cancel anytime', color: 'text-purple-600' },
-          ].map((item, i) => (
-            <div key={i} className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              <item.icon className={`${item.color} mx-auto w-5 h-5 mb-1`} />
-              <p className="text-xs text-gray-600 dark:text-gray-400">{item.label}</p>
-            </div>
-          ))}
+          ].map((item, i) => {
+            const Icon = item.icon;
+            return (
+              <div key={i} className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <Icon className={`${item.color} mx-auto w-5 h-5 mb-1`} />
+                <p className="text-xs text-gray-600 dark:text-gray-400">{item.label}</p>
+              </div>
+            );
+          })
+          }
         </div>
       </div>
     </div>

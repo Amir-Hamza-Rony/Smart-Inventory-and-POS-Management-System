@@ -146,7 +146,6 @@ export default function ReturnsPage() {
         body: JSON.stringify({
           ...returnFormData,
           items: validItems,
-          userId: 'current-user-id', // TODO: Get from auth
         }),
       });
 
@@ -169,7 +168,7 @@ export default function ReturnsPage() {
       const response = await fetch(`/api/returns/${returnId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'complete', userId: 'current-user-id' }),
+        body: JSON.stringify({ action: 'complete' }),
       });
 
       if (response.ok) {
@@ -190,7 +189,7 @@ export default function ReturnsPage() {
       const response = await fetch(`/api/returns/${returnId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reject', userId: 'current-user-id' }),
+        body: JSON.stringify({ action: 'reject' }),
       });
 
       if (response.ok) {

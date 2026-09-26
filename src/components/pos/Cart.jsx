@@ -52,7 +52,6 @@ export function Cart() {
             quantity: item.quantity,
             price: item.price,
           })),
-          userId: 'current-user-id', // TODO: Get from auth
           paymentMethod,
           taxRate,
           discount,

@@ -23,7 +23,38 @@ export function Header({ user: userProp }) {
 
   // Get role-based navigation
   const userRole = user?.role || 'CASHIER';
-  const { main: navigation, admin: adminOnly } = getNavigationForRole(userRole);
+  const { main: mainNav, admin: adminNav } = getNavigationForRole(userRole);
+
+  const iconMap = {
+    LayoutDashboard,
+    ShoppingCart,
+    Package,
+    BarChart2,
+    Users,
+    Settings,
+    FileText,
+    Box,
+    ShoppingBag,
+    RotateCcw,
+    Bell,
+    Activity,
+    Tag,
+    Image,
+    Building2,
+  };
+
+  function getIconComponent(iconName) {
+    return iconMap[iconName] || LayoutDashboard;
+  }
+
+  const navigation = mainNav.map((item) => ({
+    ...item,
+    icon: getIconComponent(item.icon),
+  }));
+  const adminOnly = adminNav.map((item) => ({
+    ...item,
+    icon: getIconComponent(item.icon),
+  }));
 
   const handleLogout = async () => {
     await logout();
@@ -95,7 +126,9 @@ export function Header({ user: userProp }) {
 
           {user && (
             <nav className="hidden lg:flex items-center gap-1" aria-label="Main navigation">
-              {navigation.map((item) => (
+              {navigation.map((item) => {
+                const Icon = item.icon;
+                return (
                 <Link
                   key={item.name}
                   href={item.href}
@@ -106,11 +139,14 @@ export function Header({ user: userProp }) {
                   }`}
                   onClick={() => setActiveTab(item.tab)}
                 >
-                  <item.icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4" />
                   {item.name}
                 </Link>
-              ))}
-              {adminOnly.map((item) => (
+                );
+              })}
+              {adminOnly.map((item) => {
+                const Icon = item.icon;
+                return (
                 <Link
                   key={item.name}
                   href={item.href}
@@ -121,10 +157,11 @@ export function Header({ user: userProp }) {
                   }`}
                   onClick={() => setActiveTab(item.tab)}
                 >
-                  <item.icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4" />
                   {item.name}
                 </Link>
-              ))}
+                );
+              })}
             </nav>
           )}
         </div>
@@ -132,7 +169,7 @@ export function Header({ user: userProp }) {
         <div className="flex items-center gap-2">
           {user ? (
             <>
-              <Link href="/dashboard/cart" className="relative p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+              <Link href="/dashboard" className="relative p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
                 <ShoppingCart className="w-5 h-5" />
                 {itemCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
@@ -232,7 +269,9 @@ export function Header({ user: userProp }) {
       {mobileMenuOpen && user && (
         <div className="lg:hidden border-t border-gray-200 dark:border-gray-700 py-4 px-4">
           <nav className="flex flex-col gap-1" aria-label="Mobile navigation">
-            {navigation.map((item) => (
+            {navigation.map((item) => {
+              const Icon = item.icon;
+              return (
               <Link
                 key={item.name}
                 href={item.href}
@@ -246,12 +285,15 @@ export function Header({ user: userProp }) {
                   setMobileMenuOpen(false);
                 }}
               >
-                <item.icon className="w-5 h-5" />
+                <Icon className="w-5 h-5" />
                 {item.name}
               </Link>
-            ))}
+              );
+            })}
             <div className="border-t border-gray-200 dark:border-gray-700 my-2" />
-            {adminOnly.map((item) => (
+            {adminOnly.map((item) => {
+              const Icon = item.icon;
+              return (
               <Link
                 key={item.name}
                 href={item.href}
@@ -265,10 +307,11 @@ export function Header({ user: userProp }) {
                   setMobileMenuOpen(false);
                 }}
               >
-                <item.icon className="w-5 h-5" />
+                <Icon className="w-5 h-5" />
                 {item.name}
               </Link>
-            ))}
+              );
+            })}
           </nav>
         </div>
       )}
