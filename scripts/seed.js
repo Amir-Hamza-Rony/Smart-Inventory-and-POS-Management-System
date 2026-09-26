@@ -7,6 +7,8 @@ async function seed() {
     await connectDB();
     console.log('Connected to MongoDB');
 
+    const today = new Date();
+
     // Create settings
     await Settings.findByIdAndUpdate(
       'settings',
@@ -58,7 +60,23 @@ async function seed() {
       },
       { upsert: true, new: true }
     );
-    console.log('Additional users created/updated');
+    // Create additional manager and staff users per task requirements
+    const extraUsersData = [
+      { email: 'manager1@smartpos.com', name: 'Manager One', role: 'MANAGER', password: 'manager123' },
+      { email: 'manager2@smartpos.com', name: 'Manager Two', role: 'MANAGER', password: 'manager123' },
+      { email: 'staff1@smartpos.com', name: 'Staff One', role: 'CASHIER', password: 'staff123' },
+      { email: 'staff2@smartpos.com', name: 'Staff Two', role: 'CASHIER', password: 'staff123' },
+      { email: 'staff3@smartpos.com', name: 'Staff Three', role: 'CASHIER', password: 'staff123' },
+    ];
+    for (const u of extraUsersData) {
+      const hash = await bcrypt.hash(u.password, 12);
+      await User.findOneAndUpdate(
+        { email: u.email },
+        { email: u.email, name: u.name, passwordHash: hash, role: u.role },
+        { upsert: true, new: true }
+      );
+    }
+    console.log('Additional manager and staff users created/updated');
 
     // Create categories
     const categories = [
@@ -182,6 +200,33 @@ async function seed() {
       );
       createdSuppliers.push(supplier);
       console.log(`Supplier created/updated: ${sup.name}`);
+    }
+
+    // Create diverse customers with realistic Bangladeshi details
+    const customers = [
+      { name: 'Md. Rahim Uddin', email: 'rahim.uddin@gmail.com', phone: '+8801711100001', address: 'House 12, Road 5, Dhanmondi, Dhaka 1209', loyaltyPoints: 150, totalSpent: 45250.00, visitCount: 24, lastVisit: new Date(today.getTime() - 3 * 86400000) },
+      { name: 'Farida Akter', email: 'farida.akter@yahoo.com', phone: '+8801912200002', address: 'Flat 4A, Shewrapol Tower, Chittagong 88001', loyaltyPoints: 85, totalSpent: 12500.00, visitCount: 12, lastVisit: new Date(today.getTime() - 5 * 86400000) },
+      { name: 'Hasan Mahmud', email: 'hasan.mahmud@gmail.com', phone: '+8801813300003', address: 'House 78, Shantinagar, Dhaka 1217', loyaltyPoints: 220, totalSpent: 68300.00, visitCount: 31, lastVisit: new Date(today.getTime() - 2 * 86400000) },
+      { name: 'Nusrat Jahan', email: 'nusrat.jahan@gmail.com', phone: '+8801674400004', address: '22/A, New Market Road, Khulna 9000', loyaltyPoints: 60, totalSpent: 8900.50, visitCount: 8, lastVisit: new Date(today.getTime() - 7 * 86400000) },
+      { name: 'Imran Hossain', email: 'imran.hossain@gmail.com', phone: '+8801915500005', address: 'House 15, Station Road, Rajshahi 6000', loyaltyPoints: 110, totalSpent: 22100.75, visitCount: 15, lastVisit: new Date(today.getTime() - 4 * 86400000) },
+      { name: 'Sanjana Begum', email: 'sanjana.begum@gmail.com', phone: '+8801716600006', address: 'Flat 3B, Green City Housing, Barisal 8200', loyaltyPoints: 45, totalSpent: 5600.00, visitCount: 6, lastVisit: new Date(today.getTime() - 10 * 86400000) },
+      { name: 'Tanvir Ahmed', email: 'tanvir.ahmed@gmail.com', phone: '+8801517700007', address: 'House 45, Rangpur Cantonment, Rangpur 5400', loyaltyPoints: 175, totalSpent: 34200.00, visitCount: 19, lastVisit: new Date(today.getTime() - 1 * 86400000) },
+      { name: 'Rabeya Khatun', email: 'rabeya.khatun@gmail.com', phone: '+8801818800008', address: '98/1, Sheikh Mujib Road, Mymensingh 2200', loyaltyPoints: 95, totalSpent: 14800.25, visitCount: 10, lastVisit: new Date(today.getTime() - 6 * 86400000) },
+      { name: 'Mehedi Hasan', email: 'mehedi.hasan@gmail.com', phone: '+8801919900009', address: 'House 23, Mohammadpur, Dhaka 1207', loyaltyPoints: 130, totalSpent: 38750.00, visitCount: 22, lastVisit: new Date(today.getTime() - 3 * 86400000) },
+      { name: 'Tahmina Yasmin', email: 'tahmina.yasmin@gmail.com', phone: '+880162000010', address: 'Flat 12D, Agrabad Housing, Chittagong 88000', loyaltyPoints: 70, totalSpent: 11200.00, visitCount: 9, lastVisit: new Date(today.getTime() - 8 * 86400000) },
+      { name: 'Shakil Hossain', email: 'shakil.hossain@gmail.com', phone: '+8801722100011', address: '3/14, Surma Cinema Hall Road, Sylhet 3100', loyaltyPoints: 200, totalSpent: 52100.00, visitCount: 28, lastVisit: new Date(today.getTime() - 2 * 86400000) },
+      { name: 'Farjana Akther', email: 'farjana.akther@gmail.com', phone: '+8801922200012', address: 'House 6, KDA Road, Khulna 9000', loyaltyPoints: 55, totalSpent: 7300.00, visitCount: 7, lastVisit: new Date(today.getTime() - 9 * 86400000) },
+    ];
+
+    const createdCustomers = [];
+    for (const cust of customers) {
+      const customer = await Customer.findOneAndUpdate(
+        { phone: cust.phone },
+        cust,
+        { upsert: true, new: true }
+      );
+      createdCustomers.push(customer);
+      console.log(`Customer created/updated: ${cust.name}`);
     }
 
     // Create products
@@ -360,6 +405,70 @@ async function seed() {
       console.log('Sample purchases created');
     }
 
+    // Additional sample purchases with suppliers (5 more, different statuses and payment terms)
+    const allProductsForPurchases = await Product.find().lean();
+    const purchaseStatuses = ['RECEIVED', 'PENDING', 'PARTIAL', 'RECEIVED', 'CANCELLED'];
+    const paymentStatuses = ['PAID', 'UNPAID', 'PARTIAL', 'PAID', 'UNPAID'];
+
+    for (let i = 0; i < 5; i++) {
+      const supplier = createdSuppliers[i % createdSuppliers.length];
+      const purchaseUserId = (i % 2 === 0) ? adminUser._id : (managerUser?._id || adminUser._id);
+      const numItems = (i % 3) + 2;
+      const purchaseItems = [];
+      for (let j = 0; j < numItems; j++) {
+        const prod = allProductsForPurchases[(i * 5 + j) % allProductsForPurchases.length];
+        const qty = (i + 2) * 5;
+        purchaseItems.push({
+          productId: prod._id,
+          productName: prod.name,
+          sku: prod.sku,
+          quantity: qty,
+          unitCost: prod.cost,
+          total: prod.cost * qty,
+        });
+      }
+
+      const pSubtotal = purchaseItems.reduce((sum, item) => sum + item.total, 0);
+      const pTax = pSubtotal * 0.085;
+      const pTotal = pSubtotal + pTax;
+      const pStatus = purchaseStatuses[i];
+      const pPaymentStatus = paymentStatuses[i];
+      const paidAmt = pPaymentStatus === 'PAID' ? pTotal : pPaymentStatus === 'PARTIAL' ? Math.round(pTotal * 0.6) : 0;
+
+      const pDate = new Date(today);
+      pDate.setDate(pDate.getDate() - (i * 5 + 10));
+
+      const purchaseDoc = {
+        purchaseNumber: `PO260926-${String(4 + i).padStart(4, '0')}`,
+        supplierId: supplier._id,
+        supplierName: supplier.name,
+        items: purchaseItems,
+        subtotal: pSubtotal,
+        tax: pTax,
+        discount: 0,
+        discountType: 'percentage',
+        total: pTotal,
+        status: pStatus,
+        paymentStatus: pPaymentStatus,
+        paidAmount: paidAmt,
+        userId: purchaseUserId,
+        expectedDate: pDate,
+        notes: `Restock order for ${supplier.name}`,
+      };
+
+      if (pStatus === 'RECEIVED' || pStatus === 'PARTIAL') {
+        purchaseDoc.receivedDate = new Date(pDate.getTime() - 2 * 86400000);
+      }
+
+      await Purchase.findOneAndUpdate(
+        { purchaseNumber: purchaseDoc.purchaseNumber },
+        purchaseDoc,
+        { upsert: true, new: true, timestamps: { createdAt: pDate, updatedAt: pDate } }
+      );
+      console.log(`Purchase created: ${purchaseDoc.purchaseNumber}`);
+    }
+    console.log('Additional sample purchases created');
+
     // Create sample sales
     const sampleProductsForSales = await Product.find({ isActive: true }).limit(20).lean();
     const sampleCustomer = await Customer.findOne({ email: 'walkin@test.com' });
@@ -444,6 +553,70 @@ async function seed() {
       );
       console.log('Sample sales created');
     }
+
+    // Additional sample sales with diverse customers, payment methods, and dates over last 30 days
+    const allProductsForSales = await Product.find({ isActive: true }).lean();
+    const extraSaleUsers = await User.find({
+      email: { $in: ['manager1@smartpos.com', 'manager2@smartpos.com', 'staff1@smartpos.com', 'staff2@smartpos.com', 'staff3@smartpos.com'] }
+    }).lean();
+    const saleUsers = [adminUser, managerUser, ...extraSaleUsers].filter(Boolean);
+    const paymentMethods = ['CASH', 'CARD', 'MOBILE'];
+    const saleNotes = [
+      'Regular purchase', 'Walk-in customer', 'Loyalty member', 'Gift purchase',
+      'Weekly shopping', 'Special occasion', 'Restock purchase', 'Promotional item',
+      'Seasonal buying', 'End-of-month sale', 'Clearance item', 'New arrival purchase',
+    ];
+    const saleDateOffsets = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 25, 29];
+
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - saleDateOffsets[i]);
+
+      const cust = createdCustomers[i % createdCustomers.length];
+      const saleUser = saleUsers[i % saleUsers.length];
+      const numItems = (i % 3) + 1;
+      const saleItems = [];
+      for (let j = 0; j < numItems; j++) {
+        const prod = allProductsForSales[(i * 4 + j) % allProductsForSales.length];
+        const qty = (i % 2) + 1;
+        saleItems.push({
+          productId: prod._id,
+          productName: prod.name,
+          sku: prod.sku,
+          quantity: qty,
+          price: prod.price,
+          cost: prod.cost,
+          total: prod.price * qty,
+        });
+      }
+
+      const saleSubtotal = saleItems.reduce((sum, item) => sum + item.total, 0);
+      const saleTax = saleSubtotal * 0.085;
+      const saleDiscount = (i % 4 === 0) ? saleSubtotal * 0.1 : 0;
+      const saleTotal = saleSubtotal + saleTax - saleDiscount;
+      const saleNum = `SAL260926-${String(3 + i).padStart(4, '0')}`;
+
+      await Sale.findOneAndUpdate(
+        { saleNumber: saleNum },
+        {
+          saleNumber: saleNum,
+          userId: saleUser._id,
+          items: saleItems,
+          subtotal: saleSubtotal,
+          tax: saleTax,
+          discount: saleDiscount,
+          discountType: 'percentage',
+          total: saleTotal,
+          paymentMethod: paymentMethods[i % 3],
+          status: 'COMPLETED',
+          customerId: cust?._id,
+          notes: saleNotes[i % saleNotes.length],
+        },
+        { upsert: true, new: true, timestamps: { createdAt: date, updatedAt: date } }
+      );
+      console.log(`Sale created: ${saleNum}`);
+    }
+    console.log('Additional sample sales created');
 
     // Create sample returns
     const sales = await Sale.find({ status: 'COMPLETED' }).limit(5).lean();
