@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import { Sale, Product, Settings, User, ActivityLog } from '@/models';
+import mongoose from 'mongoose';
+import { Sale, Product, Settings, User, ActivityLog, Customer } from '@/models';
 import { generateSaleNumber, formatCurrency } from '@/lib/utils';
 import { getUserFromRequest } from '@/lib/auth';
 import { createActivityLog, notifySaleCompleted, checkAndNotifyLowStock } from '@/lib/notifications';
@@ -53,6 +54,20 @@ export async function POST(request) {
     const body = await request.json();
     const { items, paymentMethod, taxRate, discount, discountType, customerId, notes } = body;
 
+    // Handle customerId - if it's not a valid ObjectId, try to find by name or set to null
+    let resolvedCustomerId = null;
+    if (customerId) {
+      if (mongoose.Types.ObjectId.isValid(customerId)) {
+        resolvedCustomerId = customerId;
+      } else {
+        // Try to find customer by name
+        const customer = await Customer.findOne({ name: { $regex: new RegExp(`^${customerId}$`, 'i') } }).lean();
+        if (customer) {
+          resolvedCustomerId = customer._id;
+        }
+      }
+    }
+
     if (!items || items.length === 0) {
       return NextResponse.json({ error: 'No items in sale' }, { status: 400 });
     }
@@ -67,6 +82,13 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // Validate product IDs are valid ObjectIds
+    for (const item of items) {
+      if (!item.productId || !mongoose.Types.ObjectId.isValid(item.productId)) {
+        return NextResponse.json({ error: 'Invalid product ID in items' }, { status: 400 });
+      }
+    }
+
     // Verify stock and get product details
     const productIds = items.map(item => item.productId);
     const products = await Product.find({ _id: { $in: productIds } }).lean();
@@ -74,7 +96,7 @@ export async function POST(request) {
     const productMap = new Map(products.map(p => [p._id.toString(), p]));
 
     for (const item of items) {
-      const product = productMap.get(item.productId);
+      const product = productMap.get(item.productId.toString());
       if (!product) {
         return NextResponse.json({ error: `Product ${item.productId} not found` }, { status: 400 });
       }
@@ -94,7 +116,7 @@ export async function POST(request) {
 
     // Create sale items with product details
     const saleItems = items.map(item => {
-      const product = productMap.get(item.productId);
+      const product = productMap.get(item.productId.toString());
       return {
         productId: product._id,
         productName: product.name,
@@ -118,13 +140,13 @@ export async function POST(request) {
       discountType,
       total,
       paymentMethod,
-      customerId,
+      customerId: resolvedCustomerId,
       notes,
     });
 
     // Update product stock and check for low stock
     for (const item of items) {
-      const product = productMap.get(item.productId);
+      const product = productMap.get(item.productId.toString());
       const newStock = product.stock - item.quantity;
 
       await Product.findByIdAndUpdate(item.productId, { $inc: { stock: -item.quantity } });

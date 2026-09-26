@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Menu, X, ShoppingCart, Settings, User, LogOut, BarChart2, Package, Users, Bell, ChevronDown, LayoutDashboard, Box, ShoppingBag, RotateCcw, Activity, Tag, Image, Building2, FileText } from 'lucide-react';
@@ -16,10 +16,32 @@ export function Header({ user: userProp }) {
   const { user: authUser, logout, isAuthenticated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Use authenticated user if available, fall back to prop
   const user = authUser || userProp;
   const itemCount = getItemCount();
+
+  // Fetch notification count and poll every 30 seconds
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await fetch('/api/notifications?limit=1');
+        if (response.ok) {
+          const data = await response.json();
+          setUnreadCount(data.unreadCount || 0);
+        }
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+      }
+    };
+
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   // Get role-based navigation
   const userRole = user?.role || 'CASHIER';
@@ -178,10 +200,16 @@ export function Header({ user: userProp }) {
                 )}
               </Link>
 
-              <Button variant="ghost" size="sm" className="relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
-              </Button>
+              <Link href="/dashboard/notifications">
+                <Button variant="ghost" size="sm" className="relative">
+                  <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </Button>
+              </Link>
 
               <div className="relative">
                 <button

@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import { Purchase, Supplier, Product, ActivityLog, User } from '@/models';
 import { generatePurchaseNumber } from '@/lib/utils';
 import { getUserFromRequest } from '@/lib/auth';
+import { createActivityLog, notifyPurchaseCreated } from '@/lib/notifications';
 
 export async function GET(request) {
   try {
@@ -79,6 +80,13 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Supplier not found' }, { status: 400 });
     }
 
+    // Validate product IDs are valid ObjectIds
+    for (const item of items) {
+      if (!item.productId || !mongoose.Types.ObjectId.isValid(item.productId)) {
+        return NextResponse.json({ error: 'Invalid product ID in items' }, { status: 400 });
+      }
+    }
+
     // Verify products and get costs
     const productIds = items.map(item => item.productId);
     const products = await Product.find({ _id: { $in: productIds } }).lean();
@@ -86,14 +94,14 @@ export async function POST(request) {
     const productMap = new Map(products.map(p => [p._id.toString(), p]));
 
     for (const item of items) {
-      const product = productMap.get(item.productId);
+      const product = productMap.get(item.productId.toString());
       if (!product) {
         return NextResponse.json({ error: `Product ${item.productId} not found` }, { status: 400 });
       }
     }
 
     // Calculate totals
-    const subtotal = items.reduce((sum, item) => sum + (item.unitCost || productMap.get(item.productId).cost) * item.quantity, 0);
+    const subtotal = items.reduce((sum, item) => sum + (item.unitCost || productMap.get(item.productId.toString()).cost) * item.quantity, 0);
     const discountAmount = discountType === 'percentage'
       ? subtotal * (discount / 100)
       : discount;
@@ -103,7 +111,7 @@ export async function POST(request) {
 
     // Create purchase items with product details
     const purchaseItems = items.map(item => {
-      const product = productMap.get(item.productId);
+      const product = productMap.get(item.productId.toString());
       return {
         productId: product._id,
         productName: product.name,
@@ -140,16 +148,17 @@ export async function POST(request) {
     });
 
     // Log activity
-    await ActivityLog.create({
+    await createActivityLog({
       userId,
-      userName: (await User.findById(userId).lean()).name || 'Unknown',
-      userEmail: (await User.findById(userId).lean()).email || 'unknown@email.com',
       action: 'CREATE_PURCHASE',
       entity: 'PURCHASE',
-      entityId: purchase._id,
+      entityId: purchase._id.toString(),
       entityName: purchaseNumber,
       details: `Created purchase ${purchaseNumber} for supplier ${supplier.name}`,
     });
+
+    // Send notifications
+    await notifyPurchaseCreated(purchase, userId);
 
     await purchase.populate('userId', 'name email');
     await purchase.populate('supplierId', 'name company');

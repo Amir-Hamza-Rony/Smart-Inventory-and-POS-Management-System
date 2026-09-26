@@ -175,7 +175,7 @@ export async function checkAndNotifyLowStock(productId, currentStock, minStock, 
 export async function notifySaleCompleted(sale, userId) {
   await notifyAdminsAndManagers({
     title: 'Sale Completed',
-    message: `Sale #${sale.saleNumber} completed for ${formatCurrency(sale.total)} by ${sale.userId?.name || 'Unknown'}`,
+    message: `Sale completed - Invoice #${sale.saleNumber} - ${formatCurrency(sale.total)}`,
     type: 'NEW_ORDER',
     relatedEntity: 'SALE',
     relatedEntityId: sale._id,
@@ -187,7 +187,7 @@ export async function notifySaleCompleted(sale, userId) {
     await createNotification({
       userId,
       title: 'Sale Completed',
-      message: `Your sale #${sale.saleNumber} for ${formatCurrency(sale.total)} has been completed.`,
+      message: `Sale completed - Invoice #${sale.saleNumber} - ${formatCurrency(sale.total)}`,
       type: 'SUCCESS',
       relatedEntity: 'SALE',
       relatedEntityId: sale._id,
@@ -197,14 +197,43 @@ export async function notifySaleCompleted(sale, userId) {
 }
 
 /**
- * Notify about purchase order received
+ * Notify about purchase order created
+ * @param {Object} purchase - Purchase object
+ * @param {string} userId - User who created the purchase
+ */
+export async function notifyPurchaseCreated(purchase, userId) {
+  await notifyAdminsAndManagers({
+    title: 'Purchase Order Created',
+    message: `Purchase order #${purchase.purchaseNumber} created for ${purchase.supplierName}`,
+    type: 'PURCHASE_RECEIVED',
+    relatedEntity: 'PURCHASE',
+    relatedEntityId: purchase._id,
+    actionUrl: '/dashboard/purchases',
+  });
+
+  // Also notify the user who created it
+  if (userId) {
+    await createNotification({
+      userId,
+      title: 'Purchase Order Created',
+      message: `Purchase order #${purchase.purchaseNumber} created`,
+      type: 'SUCCESS',
+      relatedEntity: 'PURCHASE',
+      relatedEntityId: purchase._id,
+      actionUrl: '/dashboard/purchases',
+    });
+  }
+}
+
+/**
+ * Notify about purchase order received (stock updated)
  * @param {Object} purchase - Purchase object
  * @param {string} userId - User who received the purchase
  */
 export async function notifyPurchaseReceived(purchase, userId) {
   await notifyAdminsAndManagers({
     title: 'Purchase Order Received',
-    message: `Purchase order ${purchase.purchaseNumber} from ${purchase.supplierName} has been received. Stock has been updated.`,
+    message: `Purchase order #${purchase.purchaseNumber} from ${purchase.supplierName} has been received. Stock has been updated.`,
     type: 'PURCHASE_RECEIVED',
     relatedEntity: 'PURCHASE',
     relatedEntityId: purchase._id,
@@ -215,8 +244,8 @@ export async function notifyPurchaseReceived(purchase, userId) {
   if (userId) {
     await createNotification({
       userId,
-      title: 'Purchase Received',
-      message: `You have received purchase order ${purchase.purchaseNumber} from ${purchase.supplierName}.`,
+      title: 'Purchase Order Received',
+      message: `Purchase order #${purchase.purchaseNumber} received - stock updated`,
       type: 'SUCCESS',
       relatedEntity: 'PURCHASE',
       relatedEntityId: purchase._id,

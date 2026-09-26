@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Header, Sidebar } from '@/components/layout';
 import { ProductGrid } from '@/components/pos/ProductGrid';
-import { Button, Input, Modal, ModalFooter, Card, CardContent } from '@/components/ui';
+import { Button, Input, Select, Modal, ModalFooter, Card, CardContent } from '@/components/ui';
 import { useProductStore, useUIStore } from '@/stores/posStore';
 import { Plus, Edit, Trash2, Search, Filter } from 'lucide-react';
 
@@ -128,9 +128,13 @@ export default function ProductsPage() {
                 <Input label="Name" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
                 <Input label="SKU" value={formData.sku} onChange={(e) => setFormData({...formData, sku: e.target.value.toUpperCase()})} required />
                 <Input label="Barcode" value={formData.barcode} onChange={(e) => setFormData({...formData, barcode: e.target.value})} />
-                <Input label="Category" type="select" value={formData.categoryId} onChange={(e) => setFormData({...formData, categoryId: e.target.value})} required>
-                  {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
-                </Input>
+                <Select
+                  label="Category"
+                  value={formData.categoryId}
+                  onChange={(e) => setFormData({...formData, categoryId: e.target.value})}
+                  options={categories.map(c => ({ value: c._id, label: c.name }))}
+                  required
+                />
                 <Input label="Price" type="number" step="0.01" min="0" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} required />
                 <Input label="Cost" type="number" step="0.01" min="0" value={formData.cost} onChange={(e) => setFormData({...formData, cost: e.target.value})} required />
                 <Input label="Stock" type="number" min="0" value={formData.stock} onChange={(e) => setFormData({...formData, stock: e.target.value})} />
