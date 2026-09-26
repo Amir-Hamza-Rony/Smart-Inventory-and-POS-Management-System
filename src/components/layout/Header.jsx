@@ -9,9 +9,9 @@ import { useUIStore, usePosStore } from '@/stores/posStore';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { getNavigationForRole } from '@/lib/permissions';
 
-export function Header({ user: userProp }) {
+export function Header({ user: userProp, onMenuClick }) {
   const router = useRouter();
-  const { sidebarOpen, toggleSidebar, setActiveTab, activeTab } = useUIStore();
+  const { setActiveTab, activeTab } = useUIStore();
   const { getItemCount } = usePosStore();
   const { user: authUser, logout, isAuthenticated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -104,8 +104,10 @@ export function Header({ user: userProp }) {
 
   return (
     <header className="sticky top-0 z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-      <div className="flex items-center justify-between h-16 px-4">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between h-16 px-4 gap-4">
+
+        {/* LEFT: Logo - never shrinks */}
+        <div className="flex-shrink-0 flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
@@ -120,7 +122,7 @@ export function Header({ user: userProp }) {
             variant="ghost"
             size="sm"
             className="hidden lg:flex"
-            onClick={toggleSidebar}
+            onClick={onMenuClick}
             aria-label="Toggle sidebar"
           >
             <Menu className="w-5 h-5" />
@@ -145,23 +147,26 @@ export function Header({ user: userProp }) {
               </span>
             </Link>
           )}
+        </div>
 
-          {user && (
-            <nav className="hidden lg:flex items-center gap-1" aria-label="Main navigation">
+        {/* MIDDLE: Nav links - scrollable, takes remaining space */}
+        {user && (
+          <div className="flex-1 overflow-x-auto hidden lg:block min-w-0">
+            <nav className="flex items-center gap-1 min-w-max" aria-label="Main navigation">
               {navigation.map((item) => {
                 const Icon = item.icon;
                 return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === item.tab
                       ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                       : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                   }`}
                   onClick={() => setActiveTab(item.tab)}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4 flex-shrink-0" />
                   {item.name}
                 </Link>
                 );
@@ -172,26 +177,27 @@ export function Header({ user: userProp }) {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === item.tab
                       ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                       : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                   }`}
                   onClick={() => setActiveTab(item.tab)}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4 flex-shrink-0" />
                   {item.name}
                 </Link>
                 );
               })}
             </nav>
-          )}
-        </div>
+          </div>
+        )}
 
-        <div className="flex items-center gap-2">
+        {/* RIGHT: User actions - never shrinks, always visible */}
+        <div className="flex-shrink-0 flex items-center gap-2 ml-4">
           {user ? (
             <>
-              <Link href="/dashboard" className="relative p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+              <Link href="/dashboard" className="relative p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 flex-shrink-0">
                 <ShoppingCart className="w-5 h-5" />
                 {itemCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
@@ -201,7 +207,7 @@ export function Header({ user: userProp }) {
               </Link>
 
               <Link href="/dashboard/notifications">
-                <Button variant="ghost" size="sm" className="relative">
+                <Button variant="ghost" size="sm" className="relative flex-shrink-0">
                   <Bell className="w-5 h-5" />
                   {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
@@ -211,23 +217,23 @@ export function Header({ user: userProp }) {
                 </Button>
               </Link>
 
-              <div className="relative">
+              <div className="relative flex-shrink-0">
                 <button
                   className="flex items-center gap-2 p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   aria-label="User menu"
                 >
-                  <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-700 dark:text-blue-300 font-medium">
+                  <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                     {user.imageUrl ? (
                       <img src={user.imageUrl} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
                     ) : (
                       getInitials(user.name)
                     )}
                   </div>
-                  <span className="hidden sm:block text-sm font-medium">
+                  <span className="hidden md:block max-w-32 truncate text-sm font-medium text-gray-900 dark:text-white">
                     {user.name || 'User'}
                   </span>
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                  <ChevronDown className="w-4 h-4 flex-shrink-0 text-gray-400" />
                 </button>
 
                 {userMenuOpen && (
