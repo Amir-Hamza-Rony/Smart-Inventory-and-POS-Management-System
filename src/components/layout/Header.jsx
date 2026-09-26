@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Menu, X, ShoppingCart, Settings, User, LogOut, BarChart2, Package, Users, Bell, ChevronDown } from 'lucide-react';
+import { Menu, X, ShoppingCart, Settings, User, LogOut, BarChart2, Package, Users, Bell, ChevronDown, LayoutDashboard, Box, ShoppingBag, RotateCcw, Activity, Tag, Image, Building2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { useUIStore, usePosStore } from '@/stores/posStore';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -21,11 +21,24 @@ export function Header({ user: userProp }) {
   const itemCount = getItemCount();
 
   const navigation = [
+    { name: 'Dashboard', href: '/dashboard/overview', icon: LayoutDashboard, tab: 'dashboard' },
     { name: 'POS', href: '/dashboard', icon: ShoppingCart, tab: 'pos' },
     { name: 'Products', href: '/products', icon: Package, tab: 'products' },
     { name: 'Sales', href: '/sales', icon: BarChart2, tab: 'sales' },
     { name: 'Customers', href: '/customers', icon: Users, tab: 'customers' },
     { name: 'Settings', href: '/settings', icon: Settings, tab: 'settings' },
+  ];
+
+  const adminOnly = [
+    { name: 'Reports', href: '/reports', icon: FileText, tab: 'reports' },
+    { name: 'Inventory', href: '/dashboard/inventory', icon: Box, tab: 'inventory' },
+    { name: 'Purchases', href: '/dashboard/purchases', icon: ShoppingBag, tab: 'purchases' },
+    { name: 'Suppliers', href: '/dashboard/suppliers', icon: Building2, tab: 'suppliers' },
+    { name: 'Returns', href: '/dashboard/returns', icon: RotateCcw, tab: 'returns' },
+    { name: 'Notifications', href: '/dashboard/notifications', icon: Bell, tab: 'notifications' },
+    { name: 'Activity Logs', href: '/dashboard/activity-logs', icon: Activity, tab: 'activity-logs' },
+    { name: 'Categories', href: '/dashboard/categories', icon: Tag, tab: 'categories' },
+    { name: 'Brands', href: '/dashboard/brands', icon: Image, tab: 'brands' },
   ];
 
   const handleLogout = async () => {
@@ -99,6 +112,21 @@ export function Header({ user: userProp }) {
           {user && (
             <nav className="hidden lg:flex items-center gap-1" aria-label="Main navigation">
               {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    activeTab === item.tab
+                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                      : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                  }`}
+                  onClick={() => setActiveTab(item.tab)}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.name}
+                </Link>
+              ))}
+              {adminOnly.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
@@ -221,6 +249,25 @@ export function Header({ user: userProp }) {
         <div className="lg:hidden border-t border-gray-200 dark:border-gray-700 py-4 px-4">
           <nav className="flex flex-col gap-1" aria-label="Mobile navigation">
             {navigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === item.tab
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                    : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                }`}
+                onClick={() => {
+                  setActiveTab(item.tab);
+                  setMobileMenuOpen(false);
+                }}
+              >
+                <item.icon className="w-5 h-5" />
+                {item.name}
+              </Link>
+            ))}
+            <div className="border-t border-gray-200 dark:border-gray-700 my-2" />
+            {adminOnly.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}

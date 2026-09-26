@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, Package, BarChart2, Users, Settings, ChevronLeft, ChevronRight, FileText, Truck, CreditCard, User, LogOut } from 'lucide-react';
+import { ShoppingCart, Package, BarChart2, Users, Settings, ChevronLeft, ChevronRight, FileText, Truck, CreditCard, User, LogOut, LayoutDashboard, Box, ShoppingBag, RotateCcw, Bell, Activity, Tag, Image, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { useUIStore } from '@/stores/posStore';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -14,6 +14,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   const navigation = [
+    { name: 'Dashboard', href: '/dashboard/overview', icon: LayoutDashboard, tab: 'dashboard' },
     { name: 'POS', href: '/dashboard', icon: ShoppingCart, tab: 'pos' },
     { name: 'Products', href: '/products', icon: Package, tab: 'products' },
     { name: 'Sales', href: '/sales', icon: BarChart2, tab: 'sales' },
@@ -23,8 +24,14 @@ export function Sidebar() {
 
   const adminOnly = [
     { name: 'Reports', href: '/reports', icon: FileText, tab: 'reports' },
-    { name: 'Inventory', href: '/inventory', icon: Truck, tab: 'inventory' },
-    { name: 'Payments', href: '/payments', icon: CreditCard, tab: 'payments' },
+    { name: 'Inventory', href: '/dashboard/inventory', icon: Box, tab: 'inventory' },
+    { name: 'Purchases', href: '/dashboard/purchases', icon: ShoppingBag, tab: 'purchases' },
+    { name: 'Suppliers', href: '/dashboard/suppliers', icon: Building2, tab: 'suppliers' },
+    { name: 'Returns', href: '/dashboard/returns', icon: RotateCcw, tab: 'returns' },
+    { name: 'Notifications', href: '/dashboard/notifications', icon: Bell, tab: 'notifications' },
+    { name: 'Activity Logs', href: '/dashboard/activity-logs', icon: Activity, tab: 'activity-logs' },
+    { name: 'Categories', href: '/dashboard/categories', icon: Tag, tab: 'categories' },
+    { name: 'Brands', href: '/dashboard/brands', icon: Image, tab: 'brands' },
   ];
 
   const userMenuItems = [

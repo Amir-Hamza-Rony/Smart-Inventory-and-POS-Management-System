@@ -26,6 +26,24 @@ export function generateSaleNumber() {
   return `POS${year}${month}${day}-${random}`;
 }
 
+export function generatePurchaseNumber() {
+  const now = new Date();
+  const year = now.getFullYear().toString().slice(-2);
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  return `PO${year}${month}${day}-${random}`;
+}
+
+export function generateReturnNumber() {
+  const now = new Date();
+  const year = now.getFullYear().toString().slice(-2);
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  return `RET${year}${month}${day}-${random}`;
+}
+
 export function calculateTotals(items, taxRate = 0, discount = 0, discountType = 'percentage') {
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const discountAmount = discountType === 'percentage'

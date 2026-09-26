@@ -1,12 +1,28 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import { Category } from '@/models';
+import { Category, Product } from '@/models';
 
-export async function GET() {
+export async function GET(request) {
   try {
     await connectDB();
 
-    const categories = await Category.find().sort({ name: 1 }).lean();
+    const { searchParams } = new URL(request.url);
+    const includeProductCount = searchParams.get('includeProductCount') === 'true';
+
+    let categories = await Category.find().sort({ name: 1 }).lean();
+
+    if (includeProductCount) {
+      const categoryIds = categories.map(c => c._id);
+      const productCounts = await Product.aggregate([
+        { $match: { categoryId: { $in: categoryIds }, isActive: true } },
+        { $group: { _id: '$categoryId', count: { $sum: 1 } } },
+      ]);
+      const countMap = new Map(productCounts.map(p => [p._id.toString(), p.count]));
+      categories = categories.map(category => ({
+        ...category,
+        productCount: countMap.get(category._id.toString()) || 0,
+      }));
+    }
 
     return NextResponse.json({ categories });
   } catch (error) {
