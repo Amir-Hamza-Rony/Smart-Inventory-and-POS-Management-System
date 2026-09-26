@@ -229,25 +229,25 @@ export default function ReturnsPage() {
   };
 
   return (
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Returns Management</h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">Process customer returns and restore inventory</p>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Returns Management</h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">Process customer returns and restore inventory</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={fetchReturns}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Refresh
+                </Button>
+                <Button onClick={handleOpenCreate}>
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  New Return
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={fetchReturns}>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Refresh
-              </Button>
-              <Button onClick={handleOpenCreate}>
-                <RotateCcw className="w-4 h-4 mr-2" />
-                New Return
-              </Button>
-            </div>
-          </div>
 
-          {/* Filters */}
-          <Card className="mb-6">
+            <Card className="mb-6">
             <CardContent className="p-4">
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="relative flex-1 max-w-md">

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import { Return, Sale, Product, ActivityLog, User } from '@/models';
 import { generateReturnNumber } from '@/lib/utils';
+import { createActivityLog, notifyReturnRequest, checkAndNotifyLowStock } from '@/lib/notifications';
 
 export async function GET(request) {
   try {
@@ -123,14 +124,33 @@ export async function POST(request) {
       status: 'PENDING',
     });
 
-    // Update product stock (increase)
-    const bulkOps = items.map(item => ({
-      updateOne: {
-        filter: { _id: item.productId },
-        update: { $inc: { stock: item.quantity } },
-      },
-    }));
-    await Product.bulkWrite(bulkOps);
+    // Update product stock (increase) and check low stock
+    for (const item of items) {
+      const product = await Product.findById(item.productId);
+      const newStock = product.stock + item.quantity;
+
+      await Product.findByIdAndUpdate(item.productId, { $inc: { stock: item.quantity } });
+
+      // Check and notify low stock (in case it was out of stock before)
+      await checkAndNotifyLowStock(
+        product._id.toString(),
+        newStock,
+        product.minStock,
+        product.name,
+        product.sku
+      );
+
+      // Log stock activity
+      await createActivityLog({
+        userId,
+        action: 'STOCK_IN',
+        entity: 'PRODUCT',
+        entityId: product._id.toString(),
+        entityName: product.name,
+        details: `Stock increased by ${item.quantity} via return ${returnNumber}. New stock: ${newStock}`,
+        metadata: { previousStock: product.stock, newStock, quantity: item.quantity, referenceId: returnDoc._id.toString(), referenceType: 'RETURN' },
+      });
+    }
 
     // Update sale status if all items returned
     const totalReturnedQty = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -140,16 +160,18 @@ export async function POST(request) {
     }
 
     // Log activity
-    await ActivityLog.create({
+    await createActivityLog({
       userId,
-      userName: (await User.findById(userId).lean()).name || 'Unknown',
-      userEmail: (await User.findById(userId).lean()).email || 'unknown@email.com',
       action: 'CREATE_RETURN',
       entity: 'RETURN',
-      entityId: returnDoc._id,
+      entityId: returnDoc._id.toString(),
       entityName: returnNumber,
       details: `Created return ${returnNumber} for sale ${sale.saleNumber}`,
+      metadata: { total, itemCount: items.length, refundMethod: refundMethod || 'CASH' },
     });
+
+    // Send notifications
+    await notifyReturnRequest(returnDoc, userId);
 
     await returnDoc.populate('userId', 'name email');
     await returnDoc.populate('saleId', 'saleNumber');

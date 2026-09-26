@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import { Sale, Product, Settings } from '@/models';
+import { Sale, Product, Settings, User, ActivityLog } from '@/models';
 import { generateSaleNumber } from '@/lib/utils';
+import { createActivityLog, notifySaleCompleted, checkAndNotifyLowStock } from '@/lib/notifications';
 
 export async function GET(request) {
   try {
@@ -114,19 +115,52 @@ export async function POST(request) {
       notes,
     });
 
-    // Update product stock
-    const bulkOps = items.map(item => ({
-      updateOne: {
-        filter: { _id: item.productId },
-        update: { $inc: { stock: -item.quantity } },
-      },
-    }));
-    await Product.bulkWrite(bulkOps);
+    // Update product stock and check for low stock
+    for (const item of items) {
+      const product = productMap.get(item.productId);
+      const newStock = product.stock - item.quantity;
+
+      await Product.findByIdAndUpdate(item.productId, { $inc: { stock: -item.quantity } });
+
+      // Check and notify low stock
+      await checkAndNotifyLowStock(
+        product._id.toString(),
+        newStock,
+        product.minStock,
+        product.name,
+        product.sku
+      );
+
+      // Log stock activity
+      await createActivityLog({
+        userId,
+        action: 'STOCK_OUT',
+        entity: 'PRODUCT',
+        entityId: product._id.toString(),
+        entityName: product.name,
+        details: `Stock reduced by ${item.quantity} via sale ${saleNumber}. New stock: ${newStock}`,
+        metadata: { previousStock: product.stock, newStock, quantity: item.quantity, referenceId: sale._id.toString(), referenceType: 'SALE' },
+      });
+    }
 
     await sale.populate('userId', 'name email');
     if (customerId) {
       await sale.populate('customerId', 'name email');
     }
+
+    // Create activity log for sale
+    await createActivityLog({
+      userId,
+      action: 'CREATE_SALE',
+      entity: 'SALE',
+      entityId: sale._id.toString(),
+      entityName: saleNumber,
+      details: `Completed sale ${saleNumber} for ${formatCurrency(total)}`,
+      metadata: { total, paymentMethod, itemCount: items.length },
+    });
+
+    // Send notifications
+    await notifySaleCompleted(sale, userId);
 
     return NextResponse.json(sale, { status: 201 });
   } catch (error) {

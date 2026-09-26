@@ -7,6 +7,7 @@ import { Menu, X, ShoppingCart, Settings, User, LogOut, BarChart2, Package, User
 import { Button } from '@/components/ui';
 import { useUIStore, usePosStore } from '@/stores/posStore';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { getNavigationForRole } from '@/lib/permissions';
 
 export function Header({ user: userProp }) {
   const router = useRouter();
@@ -20,26 +21,9 @@ export function Header({ user: userProp }) {
   const user = authUser || userProp;
   const itemCount = getItemCount();
 
-  const navigation = [
-    { name: 'Dashboard', href: '/dashboard/overview', icon: LayoutDashboard, tab: 'dashboard' },
-    { name: 'POS', href: '/dashboard', icon: ShoppingCart, tab: 'pos' },
-    { name: 'Products', href: '/products', icon: Package, tab: 'products' },
-    { name: 'Sales', href: '/sales', icon: BarChart2, tab: 'sales' },
-    { name: 'Customers', href: '/customers', icon: Users, tab: 'customers' },
-    { name: 'Settings', href: '/settings', icon: Settings, tab: 'settings' },
-  ];
-
-  const adminOnly = [
-    { name: 'Reports', href: '/reports', icon: FileText, tab: 'reports' },
-    { name: 'Inventory', href: '/dashboard/inventory', icon: Box, tab: 'inventory' },
-    { name: 'Purchases', href: '/dashboard/purchases', icon: ShoppingBag, tab: 'purchases' },
-    { name: 'Suppliers', href: '/dashboard/suppliers', icon: Building2, tab: 'suppliers' },
-    { name: 'Returns', href: '/dashboard/returns', icon: RotateCcw, tab: 'returns' },
-    { name: 'Notifications', href: '/dashboard/notifications', icon: Bell, tab: 'notifications' },
-    { name: 'Activity Logs', href: '/dashboard/activity-logs', icon: Activity, tab: 'activity-logs' },
-    { name: 'Categories', href: '/dashboard/categories', icon: Tag, tab: 'categories' },
-    { name: 'Brands', href: '/dashboard/brands', icon: Image, tab: 'brands' },
-  ];
+  // Get role-based navigation
+  const userRole = user?.role || 'CASHIER';
+  const { main: navigation, admin: adminOnly } = getNavigationForRole(userRole);
 
   const handleLogout = async () => {
     await logout();

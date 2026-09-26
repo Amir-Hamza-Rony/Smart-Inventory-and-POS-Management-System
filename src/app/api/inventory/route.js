@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import { Product } from '@/models';
+import { createActivityLog, checkAndNotifyLowStock } from '@/lib/notifications';
 
 export async function GET(request) {
   try {
@@ -86,22 +87,28 @@ export async function POST(request) {
       newStock = quantity;
     }
 
+    const previousStock = product.stock;
     product.stock = newStock;
     await product.save();
 
+    // Check and notify low stock
+    await checkAndNotifyLowStock(
+      product._id.toString(),
+      newStock,
+      product.minStock,
+      product.name,
+      product.sku
+    );
+
     // Log activity
-    const { ActivityLog, User } = await import('@/models');
-    const dbUser = await User.findById(userId).lean();
-    await ActivityLog.create({
+    await createActivityLog({
       userId,
-      userName: dbUser?.name || 'Unknown',
-      userEmail: dbUser?.email || 'unknown@email.com',
       action: `STOCK_${type}`,
       entity: 'PRODUCT',
-      entityId: product._id,
+      entityId: product._id.toString(),
       entityName: product.name,
       details: `Stock ${type.toLowerCase()}: ${quantity} units (${reason || 'No reason provided'}). New stock: ${newStock}`,
-      metadata: { previousStock: product.stock - (type === 'IN' ? quantity : type === 'OUT' ? -quantity : 0), newStock, reason, referenceId, referenceType },
+      metadata: { previousStock, newStock, reason, referenceId, referenceType },
     });
 
     return NextResponse.json({ product: product.toObject() });

@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react';
 import { Button, Input, Select, Card, CardContent, CardHeader, CardTitle, Badge, Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui';
 import { useUIStore } from '@/stores/posStore';
-import { Search, Filter, Plus, Download, RefreshCw, ArrowUp, ArrowDown, Minus, Package, AlertTriangle, XCircle, DollarSign } from 'lucide-react';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { Search, Filter, Plus, Download, RefreshCw, ArrowUp, ArrowDown, Minus, Package, AlertTriangle, XCircle, DollarSign, History, RotateCcw, ShoppingCart, Truck } from 'lucide-react';
 import { formatCurrency, formatNumber } from '@/lib/utils';
 import { format } from 'date-fns';
 
 export default function InventoryPage() {
   const { sidebarOpen } = useUIStore();
+  const { user } = useAuth();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
@@ -20,11 +22,24 @@ export default function InventoryPage() {
   const [stats, setStats] = useState({ inStock: 0, lowStock: 0, outOfStock: 0, totalValue: 0 });
   const [activeTab, setActiveTab] = useState('list'); // list, movements
 
+  // Stock movements state
+  const [movements, setMovements] = useState([]);
+  const [movementsLoading, setMovementsLoading] = useState(false);
+  const [movementsTotalPages, setMovementsTotalPages] = useState(1);
+  const [movementsCurrentPage, setMovementsCurrentPage] = useState(1);
+  const [movementTypeFilter, setMovementTypeFilter] = useState('');
+
   useEffect(() => {
     fetchProducts();
     fetchCategories();
     fetchStats();
   }, [currentPage, search, statusFilter, categoryFilter]);
+
+  useEffect(() => {
+    if (activeTab === 'movements') {
+      fetchMovements();
+    }
+  }, [activeTab, movementsCurrentPage, movementTypeFilter]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -70,6 +85,28 @@ export default function InventoryPage() {
     }
   };
 
+  const fetchMovements = async () => {
+    setMovementsLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: movementsCurrentPage.toString(),
+        limit: '50',
+      });
+      if (movementTypeFilter) params.set('action', movementTypeFilter);
+
+      const response = await fetch(`/api/activity-logs?entity=PRODUCT&${params}`);
+      const data = await response.json();
+      if (data.logs) {
+        setMovements(data.logs);
+        setMovementsTotalPages(Math.ceil(data.total / 50));
+      }
+    } catch (error) {
+      console.error('Failed to fetch stock movements:', error);
+    } finally {
+      setMovementsLoading(false);
+    }
+  };
+
   const getStockStatus = (product) => {
     if (product.stock === 0) return { label: 'Out of Stock', variant: 'danger', icon: '🔴' };
     if (product.stock <= product.minStock) return { label: 'Low Stock', variant: 'warning', icon: '🟡' };
@@ -102,7 +139,7 @@ export default function InventoryPage() {
           type,
           quantity: qty,
           reason,
-          userId: 'current-user-id', // TODO: Get from auth
+          userId: user?.id || 'current-user-id',
         }),
       });
 
@@ -116,6 +153,33 @@ export default function InventoryPage() {
     } catch (error) {
       alert('Failed to adjust stock');
     }
+  };
+
+  const getMovementIcon = (action) => {
+    const icons = {
+      STOCK_IN: ArrowUp,
+      STOCK_OUT: ArrowDown,
+      STOCK_ADJUSTMENT: Minus,
+      CREATE_PURCHASE: Truck,
+      RECEIVE_PURCHASE: Truck,
+      CREATE_SALE: ShoppingCart,
+      CREATE_RETURN: RotateCcw,
+      COMPLETE_RETURN: RotateCcw,
+    };
+    return icons[action] || History;
+  };
+
+  const getMovementColor = (action) => {
+    if (action === 'STOCK_IN' || action === 'RECEIVE_PURCHASE') return 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30';
+    if (action === 'STOCK_OUT' || action === 'CREATE_SALE') return 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30';
+    if (action === 'STOCK_ADJUSTMENT') return 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30';
+    if (action === 'CREATE_RETURN' || action === 'COMPLETE_RETURN') return 'text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30';
+    if (action === 'CREATE_PURCHASE') return 'text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/30';
+    return 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700';
+  };
+
+  const formatAction = (action) => {
+    return action.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
   };
 
   return (
@@ -368,18 +432,123 @@ export default function InventoryPage() {
             <TabsContent value="movements">
               <Card>
                 <CardHeader>
-                  <CardTitle>Stock Movement History</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Stock Movement History</CardTitle>
+                    <Select
+                      value={movementTypeFilter}
+                      onChange={(e) => { setMovementTypeFilter(e.target.value); setMovementsCurrentPage(1); }}
+                      options={[
+                        { value: '', label: 'All Types' },
+                        { value: 'STOCK_IN', label: 'Stock In' },
+                        { value: 'STOCK_OUT', label: 'Stock Out' },
+                        { value: 'STOCK_ADJUSTMENT', label: 'Adjustment' },
+                        { value: 'RECEIVE_PURCHASE', label: 'Purchase Received' },
+                        { value: 'CREATE_SALE', label: 'Sale' },
+                        { value: 'CREATE_RETURN', label: 'Return' },
+                        { value: 'COMPLETE_RETURN', label: 'Return Completed' },
+                      ]}
+                      className="w-48"
+                    />
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                    <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p>Stock movement history coming soon</p>
-                    <p className="text-sm mt-1">This will show all stock adjustments, purchases, sales, and returns</p>
-                  </div>
+                  {movementsLoading ? (
+                    <div className="py-12 text-center">
+                      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                      <p className="text-gray-600 dark:text-gray-400">Loading movements...</p>
+                    </div>
+                  ) : movements.length === 0 ? (
+                    <div className="py-12 text-center">
+                      <History className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">No stock movements found</h3>
+                      <p className="text-gray-500 dark:text-gray-400">Stock movements will appear here after sales, purchases, returns, or manual adjustments</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {movements.map((movement) => {
+                        const MovementIcon = getMovementIcon(movement.action);
+                        const colorClass = getMovementColor(movement.action);
+                        const metadata = movement.metadata || {};
+                        const prevStock = metadata.previousStock !== undefined ? metadata.previousStock : '-';
+                        const newStock = metadata.newStock !== undefined ? metadata.newStock : '-';
+                        const quantity = metadata.quantity ? (movement.action === 'STOCK_OUT' || movement.action === 'CREATE_SALE' ? -metadata.quantity : metadata.quantity) : null;
+
+                        return (
+                          <div key={movement._id} className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                            <div className="flex items-start gap-4">
+                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${colorClass}`}>
+                                <MovementIcon className="w-5 h-5" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div>
+                                    <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                      {formatAction(movement.action)}
+                                      <Badge variant="default" className="text-xs">{movement.entity}</Badge>
+                                    </h4>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{movement.details || '-'}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                      By {movement.userName} ({movement.userEmail}) • {format(new Date(movement.createdAt), 'MMM dd, yyyy HH:mm:ss')}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-4 text-right whitespace-nowrap">
+                                    <div className="text-sm">
+                                      <span className="text-gray-500 dark:text-gray-400">Prev: </span>
+                                      <span className="font-medium">{formatNumber(prevStock)}</span>
+                                    </div>
+                                    <div className="text-sm">
+                                      <span className="text-gray-500 dark:text-gray-400">New: </span>
+                                      <span className="font-medium">{formatNumber(newStock)}</span>
+                                    </div>
+                                    {quantity !== null && (
+                                      <span className={`text-sm font-medium ${quantity < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                        {quantity > 0 ? '+' : ''}{quantity}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                {movement.metadata?.referenceId && (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                    Reference: {movement.metadata.referenceType} #{movement.metadata.referenceId}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {movementsTotalPages > 1 && (
+                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Page {movementsCurrentPage} of {movementsTotalPages}
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setMovementsCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={movementsCurrentPage === 1}
+                        >
+                          Previous
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setMovementsCurrentPage(p => Math.min(movementsTotalPages, p + 1))}
+                          disabled={movementsCurrentPage === movementsTotalPages}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
           </Tabs>
-    </div>
-  );
+        </div>
+    );
 }

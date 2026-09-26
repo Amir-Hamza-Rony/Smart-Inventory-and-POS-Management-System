@@ -129,23 +129,23 @@ export default function NotificationsPage() {
   };
 
   return (
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Notifications</h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">Stay updated with your store activities</p>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Notifications</h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">Stay updated with your store activities</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <Button onClick={handleMarkAllAsRead} variant="outline">
+                    <Check className="w-4 h-4 mr-2" />
+                    Mark All as Read
+                  </Button>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {unreadCount > 0 && (
-                <Button onClick={handleMarkAllAsRead} variant="outline">
-                  <Check className="w-4 h-4 mr-2" />
-                  Mark All as Read
-                </Button>
-              )}
-            </div>
-          </div>
 
-          {/* Filter Tabs */}
-          <div className="flex gap-2 mb-6">
+            <div className="flex gap-2 mb-6">
             {[
               { value: 'all', label: 'All' },
               { value: 'unread', label: `Unread ${unreadCount > 0 ? `(${unreadCount})` : ''}` },
@@ -188,7 +188,10 @@ export default function NotificationsPage() {
                     >
                       <div className="flex items-start gap-3">
                         <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0', getTypeColor(notification.type))}>
-                          <getTypeIcon(notification.type) className="w-5 h-5" />
+                          {(function() {
+                            const Icon = getTypeIcon(notification.type);
+                            return <Icon className="w-5 h-5" />;
+                          })()}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import { Supplier } from '@/models';
+import { createActivityLog, notifyPaymentDue } from '@/lib/notifications';
 
 export async function GET(request) {
   try {
@@ -48,7 +49,7 @@ export async function POST(request) {
     await connectDB();
 
     const body = await request.json();
-    const { name, company, email, phone, address, contactPerson, taxId, paymentTerms, notes } = body;
+    const { name, company, email, phone, address, contactPerson, taxId, paymentTerms, notes, dueAmount, userId } = body;
 
     if (!name) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -63,8 +64,26 @@ export async function POST(request) {
       contactPerson,
       taxId,
       paymentTerms: paymentTerms || 30,
+      dueAmount: dueAmount || 0,
       notes,
     });
+
+    // Log activity
+    if (userId) {
+      await createActivityLog({
+        userId,
+        action: 'CREATE_SUPPLIER',
+        entity: 'SUPPLIER',
+        entityId: supplier._id.toString(),
+        entityName: supplier.name,
+        details: `Added new supplier: ${supplier.name}`,
+      });
+    }
+
+    // Notify about payment due if there's a due amount
+    if (supplier.dueAmount > 0) {
+      await notifyPaymentDue(supplier);
+    }
 
     return NextResponse.json(supplier, { status: 201 });
   } catch (error) {

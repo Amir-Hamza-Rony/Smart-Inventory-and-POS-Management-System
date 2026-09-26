@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Header, Sidebar } from '@/components/layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Alert, AlertDescription, AlertTitle } from '@/components/ui';
 import { useUIStore } from '@/stores/posStore';
-import { TrendingUp, DollarSign, ShoppingCart, Users, Package, Clock } from 'lucide-react';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { TrendingUp, DollarSign, ShoppingCart, Users, Package, Clock, Lock, AlertTriangle } from 'lucide-react';
 import { formatCurrency, formatNumber } from '@/lib/utils';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -13,13 +15,26 @@ import {
 
 export default function ReportsPage() {
   const { sidebarOpen } = useUIStore();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
+  // Reports accessible to ADMIN and MANAGER only
+  const canAccess = user?.role === 'ADMIN' || user?.role === 'MANAGER';
+
   useEffect(() => {
-    fetchReports();
-  }, [dateRange]);
+    if (!authLoading && !canAccess) {
+      router.push('/dashboard/overview');
+    }
+  }, [authLoading, canAccess, router]);
+
+  useEffect(() => {
+    if (canAccess) {
+      fetchReports();
+    }
+  }, [canAccess, dateRange]);
 
   const fetchReports = async () => {
     setLoading(true);
@@ -45,7 +60,41 @@ export default function ReportsPage() {
     { label: 'Last Month', start: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toISOString().split('T')[0], end: new Date(new Date().getFullYear(), new Date().getMonth(), 0).toISOString().split('T')[0] },
   ];
 
-  if (!reportData) {
+  // Show loading while auth is checking
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show access denied for unauthorized users
+  if (!canAccess) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="max-w-md mx-auto text-center p-6">
+          <Lock className="w-16 h-16 mx-auto text-yellow-500 mb-4" />
+          <Alert variant="destructive">
+            <AlertTriangle className="w-5 h-5" />
+            <AlertTitle>Access Denied</AlertTitle>
+            <AlertDescription>
+              This page is only accessible to administrators and managers. Please contact your system administrator if you believe this is an error.
+            </AlertDescription>
+          </Alert>
+          <Button onClick={() => router.push('/dashboard/overview')} className="mt-4">
+            Go to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading while fetching reports
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
         <Sidebar />

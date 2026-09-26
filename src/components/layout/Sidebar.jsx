@@ -3,36 +3,53 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ShoppingCart, Package, BarChart2, Users, Settings, ChevronLeft, ChevronRight, FileText, Truck, CreditCard, User, LogOut, LayoutDashboard, Box, ShoppingBag, RotateCcw, Bell, Activity, Tag, Image, Building2 } from 'lucide-react';
+
+function getIconComponent(iconName) {
+  const icons = {
+    LayoutDashboard,
+    ShoppingCart,
+    Package,
+    BarChart2,
+    Users,
+    Settings,
+    FileText,
+    Box,
+    ShoppingBag,
+    RotateCcw,
+    Bell,
+    Activity,
+    Tag,
+    Image,
+    Building2,
+  };
+  return icons[iconName] || LayoutDashboard;
+}
 import { Button } from '@/components/ui';
 import { useUIStore } from '@/stores/posStore';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { cn } from '@/lib/utils';
+import { getNavigationForRole } from '@/lib/permissions';
 
 export function Sidebar() {
   const { sidebarOpen, toggleSidebar, activeTab, setActiveTab } = useUIStore();
   const { user, logout } = useAuth();
   const pathname = usePathname();
 
-  const navigation = [
-    { name: 'Dashboard', href: '/dashboard/overview', icon: LayoutDashboard, tab: 'dashboard' },
-    { name: 'POS', href: '/dashboard', icon: ShoppingCart, tab: 'pos' },
-    { name: 'Products', href: '/products', icon: Package, tab: 'products' },
-    { name: 'Sales', href: '/sales', icon: BarChart2, tab: 'sales' },
-    { name: 'Customers', href: '/customers', icon: Users, tab: 'customers' },
-    { name: 'Settings', href: '/settings', icon: Settings, tab: 'settings' },
-  ];
+  // Get role-based navigation
+  const userRole = user?.role || 'CASHIER';
+  const { main, admin } = getNavigationForRole(userRole);
 
-  const adminOnly = [
-    { name: 'Reports', href: '/reports', icon: FileText, tab: 'reports' },
-    { name: 'Inventory', href: '/dashboard/inventory', icon: Box, tab: 'inventory' },
-    { name: 'Purchases', href: '/dashboard/purchases', icon: ShoppingBag, tab: 'purchases' },
-    { name: 'Suppliers', href: '/dashboard/suppliers', icon: Building2, tab: 'suppliers' },
-    { name: 'Returns', href: '/dashboard/returns', icon: RotateCcw, tab: 'returns' },
-    { name: 'Notifications', href: '/dashboard/notifications', icon: Bell, tab: 'notifications' },
-    { name: 'Activity Logs', href: '/dashboard/activity-logs', icon: Activity, tab: 'activity-logs' },
-    { name: 'Categories', href: '/dashboard/categories', icon: Tag, tab: 'categories' },
-    { name: 'Brands', href: '/dashboard/brands', icon: Image, tab: 'brands' },
-  ];
+  const navigation = main.map(item => ({
+    ...item,
+    icon: getIconComponent(item.icon),
+    tab: item.href.replace('/', '-').replace('dashboard-', ''),
+  }));
+
+  const adminOnly = admin.map(item => ({
+    ...item,
+    icon: getIconComponent(item.icon),
+    tab: item.href.replace('/', '-').replace('dashboard-', ''),
+  }));
 
   const userMenuItems = [
     { name: 'My Profile', href: '/dashboard/profile', icon: User },

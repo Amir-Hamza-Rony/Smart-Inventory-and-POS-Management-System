@@ -1,14 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Header, Sidebar } from '@/components/layout';
-import { Button, Input, Select, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { Button, Input, Select, Card, CardContent, CardHeader, CardTitle, Alert, AlertDescription, AlertTitle } from '@/components/ui';
 import { useUIStore } from '@/stores/posStore';
-import { Save, Store, DollarSign, CreditCard, Receipt, Bell, Shield, Palette } from 'lucide-react';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { Save, Store, DollarSign, CreditCard, Receipt, Bell, Shield, Palette, AlertTriangle, Lock } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 export default function SettingsPage() {
   const { sidebarOpen } = useUIStore();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [settings, setSettings] = useState({
     storeName: 'Smart POS',
     taxRate: 0,
@@ -18,9 +22,53 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  // Check if user is admin - settings is admin only
+  const isAdmin = user?.role === 'ADMIN';
+
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    if (!authLoading && !isAdmin) {
+      router.push('/dashboard/overview');
+    }
+  }, [authLoading, isAdmin, router]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchSettings();
+    }
+  }, [isAdmin]);
+
+  // Show loading while auth is checking
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show access denied for non-admin users
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="max-w-md mx-auto text-center p-6">
+          <Lock className="w-16 h-16 mx-auto text-yellow-500 mb-4" />
+          <Alert variant="destructive">
+            <AlertTriangle className="w-5 h-5" />
+            <AlertTitle>Access Denied</AlertTitle>
+            <AlertDescription>
+              This page is only accessible to administrators. Please contact your system administrator if you believe this is an error.
+            </AlertDescription>
+          </Alert>
+          <Button onClick={() => router.push('/dashboard/overview')} className="mt-4">
+            Go to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const fetchSettings = async () => {
     try {

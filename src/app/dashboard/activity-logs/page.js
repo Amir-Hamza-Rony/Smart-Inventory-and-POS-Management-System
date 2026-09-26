@@ -163,7 +163,6 @@ export default function ActivityLogsPage() {
             </div>
           </div>
 
-          {/* Filters */}
           <Card className="mb-6">
             <CardContent className="p-4">
               <div className="flex flex-col lg:flex-row gap-4">
@@ -264,7 +263,10 @@ export default function ActivityLogsPage() {
                               )}>
                                 {formatAction(log.action)}
                               </span>
-                              <getActionIcon(log.action) className="w-4 h-4 text-gray-400" />
+                              {(function() {
+                                const Icon = getActionIcon(log.action);
+                                return <Icon className="w-4 h-4 text-gray-400" />;
+                              })()}
                             </div>
                           </td>
                           <td className="p-3 text-sm text-gray-600 dark:text-gray-400">

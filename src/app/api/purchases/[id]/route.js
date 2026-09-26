@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import { Purchase, Product, Supplier, ActivityLog, User } from '@/models';
+import { createActivityLog, notifyPurchaseReceived } from '@/lib/notifications';
 
 export async function GET(request, { params }) {
   try {
@@ -117,16 +118,18 @@ export async function PATCH(request, { params }) {
         .lean();
 
       // Log activity
-      await ActivityLog.create({
+      await createActivityLog({
         userId,
-        userName: (await User.findById(userId).lean()).name || 'Unknown',
-        userEmail: (await User.findById(userId).lean()).email || 'unknown@email.com',
         action: 'RECEIVE_PURCHASE',
         entity: 'PURCHASE',
-        entityId: purchase._id,
+        entityId: purchase._id.toString(),
         entityName: purchase.purchaseNumber,
         details: `Received purchase ${purchase.purchaseNumber} from ${purchase.supplierName}`,
+        metadata: { supplierId: purchase.supplierId.toString(), itemCount: purchase.items.length },
       });
+
+      // Send notifications
+      await notifyPurchaseReceived(purchase, userId);
     } else if (action === 'cancel') {
       if (purchase.status === 'RECEIVED') {
         return NextResponse.json({ error: 'Cannot cancel received purchase' }, { status: 400 });
@@ -147,13 +150,11 @@ export async function PATCH(request, { params }) {
         .lean();
 
       // Log activity
-      await ActivityLog.create({
+      await createActivityLog({
         userId,
-        userName: (await User.findById(userId).lean()).name || 'Unknown',
-        userEmail: (await User.findById(userId).lean()).email || 'unknown@email.com',
         action: 'CANCEL_PURCHASE',
         entity: 'PURCHASE',
-        entityId: purchase._id,
+        entityId: purchase._id.toString(),
         entityName: purchase.purchaseNumber,
         details: `Cancelled purchase ${purchase.purchaseNumber}`,
       });
