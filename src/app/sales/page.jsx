@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import { Header, Sidebar } from '@/components/layout';
 import { Button, Input, Select, Card, CardContent, Modal, ModalFooter, Badge } from '@/components/ui';
-import { Search, Filter, Calendar, Eye, Download } from 'lucide-react';
+import { Search, Filter, Calendar, Eye, Download, FileText, Printer } from 'lucide-react';
 import { useUIStore } from '@/stores/posStore';
 import { formatCurrency, formatNumber } from '@/lib/utils';
 import { format } from 'date-fns';
+import Link from 'next/link';
 
 export default function SalesPage() {
   const { sidebarOpen } = useUIStore();
@@ -174,13 +175,25 @@ export default function SalesPage() {
                           </td>
                           <td className="p-3">{getStatusBadge(sale.status)}</td>
                           <td className="p-3 text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => { setSelectedSale(sale); setShowDetail(true); }}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => { setSelectedSale(sale); setShowDetail(true); }}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              <Link href={`/dashboard/sales/${sale._id}/invoice`}>
+                                <Button variant="ghost" size="sm">
+                                  <FileText className="w-4 h-4" />
+                                </Button>
+                              </Link>
+                              <Link href={`/dashboard/sales/${sale._id}/invoice`} target="_blank" rel="noopener noreferrer">
+                                <Button variant="ghost" size="sm">
+                                  <Printer className="w-4 h-4" />
+                                </Button>
+                              </Link>
+                            </div>
                           </td>
                         </tr>
                       ))

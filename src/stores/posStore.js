@@ -63,7 +63,7 @@ export const usePosStore = create(
         set({ discount, discountType: type });
       },
 
-      setTaxRate: (rate) => set({ taxRate: rate }),
+      setTaxRate: (rate) => set({ taxRate: Number(rate) || 0 }),
 
       setCustomerId: (customerId) => set({ customerId }),
 
