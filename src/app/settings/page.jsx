@@ -6,12 +6,14 @@ import { Header, Sidebar } from '@/components/layout';
 import { Button, Input, Select, Card, CardContent, CardHeader, CardTitle, Alert, AlertDescription, AlertTitle } from '@/components/ui';
 import { useUIStore } from '@/stores/posStore';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useTheme } from '@/components/providers/ThemeProvider';
 import { Save, Store, DollarSign, CreditCard, Receipt, Bell, Shield, Palette, AlertTriangle, Lock } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 export default function SettingsPage() {
   const { sidebarOpen } = useUIStore();
   const { user, loading: authLoading } = useAuth();
+  const { theme, setTheme } = useTheme();
   const router = useRouter();
   const [settings, setSettings] = useState({
     storeName: 'Smart POS',
@@ -234,8 +236,8 @@ export default function SettingsPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Theme</label>
                     <Select
-                      value="light"
-                      onChange={() => {}}
+                      value={theme}
+                      onChange={(e) => setTheme(e.target.value)}
                       options={[
                         { value: 'light', label: 'Light' },
                         { value: 'dark', label: 'Dark' },

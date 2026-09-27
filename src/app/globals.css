@@ -24,8 +24,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Dark mode via media query (system preference) */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
     --background: #0f172a;
     --foreground: #f1f5f9;
     --primary: #3b82f6;
@@ -35,6 +36,30 @@
     --warning: #f59e0b;
     --danger: #ef4444;
   }
+}
+
+/* Dark mode via class (manual selection) */
+.dark {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --secondary: #94a3b8;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+}
+
+/* Light mode via class (manual selection) */
+.light {
+  --background: #f9fafb;
+  --foreground: #111827;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --secondary: #6b7280;
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #dc2626;
 }
 
 * {

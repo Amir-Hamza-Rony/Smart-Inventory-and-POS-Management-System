@@ -54,7 +54,7 @@ export function ProductGrid({ onEdit, onDelete, managementMode = false }) {
             <p className="text-sm">Try adjusting your search or filters</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
             {filteredProducts.map((product) => (
               <ProductCard
                 key={product._id}
@@ -78,16 +78,16 @@ function ProductCard({ product, onAdd, onEdit, onDelete, managementMode, lowStoc
 
   if (managementMode) {
     return (
-      <Card className="p-3 flex flex-col min-h-[180px]">
+      <Card className="p-3 flex flex-col min-h-[200px]">
         <div className="relative mb-2">
           {product.imageUrl ? (
             <img
               src={product.imageUrl}
               alt={product.name}
-              className="w-full h-24 object-cover rounded-lg"
+              className="w-full h-28 object-cover rounded-lg"
             />
           ) : (
-            <div className="w-full h-24 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+            <div className="w-full h-28 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
               <Barcode className="w-10 h-10 text-gray-400" />
             </div>
           )}
@@ -145,16 +145,16 @@ function ProductCard({ product, onAdd, onEdit, onDelete, managementMode, lowStoc
   }
 
   return (
-    <Card className="p-3 flex flex-col cursor-pointer hover:shadow-md transition-shadow min-h-[180px]" onClick={() => onAdd(product)}>
+    <Card className="p-3 flex flex-col cursor-pointer hover:shadow-md transition-shadow min-h-[200px]" onClick={() => onAdd(product)}>
       <div className="relative mb-2">
         {product.imageUrl ? (
           <img
             src={product.imageUrl}
             alt={product.name}
-            className="w-full h-24 object-cover rounded-lg"
+            className="w-full h-28 object-cover rounded-lg"
           />
         ) : (
-          <div className="w-full h-24 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+          <div className="w-full h-28 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
             <Barcode className="w-10 h-10 text-gray-400" />
           </div>
         )}

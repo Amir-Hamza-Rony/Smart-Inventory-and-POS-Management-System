@@ -26,7 +26,7 @@ function getIconComponent(iconName) {
   return icons[iconName] || LayoutDashboard;
 }
 
-export function Sidebar({ collapsed = false, onToggle, onSignOut }) {
+export function Sidebar({ collapsed = false, onToggle, onSignOut, sidebarWidth }) {
   const pathname = usePathname();
 
   // Static navigation - all items always visible with text when expanded
@@ -54,14 +54,34 @@ export function Sidebar({ collapsed = false, onToggle, onSignOut }) {
   return (
     <aside
       className={cn(
-        'h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300',
+        'bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 z-40',
         collapsed ? 'w-16' : 'w-64'
       )}
       aria-label="Sidebar navigation"
-      style={{ height: '100vh', minWidth: collapsed ? '64px' : '256px' }}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        bottom: 0,
+        height: '100vh',
+        width: sidebarWidth,
+        minWidth: sidebarWidth,
+        maxWidth: sidebarWidth,
+      }}
     >
-      {/* Top spacing for header */}
-      <div className="h-16 border-b border-gray-200 dark:border-gray-700" />
+      {/* Logo at top of sidebar */}
+      <div className="h-16 flex items-center justify-center px-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+            <ShoppingCart className="w-5 h-5 text-white" />
+          </div>
+          {!collapsed && (
+            <span className="font-bold text-xl text-gray-900 dark:text-white truncate">
+              Smart POS
+            </span>
+          )}
+        </Link>
+      </div>
 
       {/* Navigation content */}
       <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto" aria-label="Main navigation">
@@ -75,7 +95,6 @@ export function Sidebar({ collapsed = false, onToggle, onSignOut }) {
                 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                 : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
             )}
-            onClick={() => !collapsed && onToggle?.()}
             title={collapsed ? item.name : undefined}
           >
             <item.icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
@@ -102,8 +121,6 @@ export function Sidebar({ collapsed = false, onToggle, onSignOut }) {
               if (item.action) {
                 e.preventDefault();
                 onSignOut?.();
-              } else if (!collapsed) {
-                onToggle?.();
               }
             }}
           >

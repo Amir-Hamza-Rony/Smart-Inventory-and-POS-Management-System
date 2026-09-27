@@ -5,7 +5,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { useAuth } from '@/components/providers/AuthProvider';
 
-export default function DashboardLayout({ children }) {
+export default function AppLayout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { logout } = useAuth();
